@@ -1,0 +1,15 @@
+# Logs
+logs/
+*.log
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Build output
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/

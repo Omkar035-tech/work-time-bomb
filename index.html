@@ -1,0 +1,1031 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Countdown Timer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: transparent;
+            font-family: Arial, sans-serif;
+            user-select: none;
+            /* Prevent text selection */
+        }
+
+        /* Container to make draggable area */
+        #app-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-app-region: drag;
+            /* Make the container draggable */
+        }
+
+        /* Wrapper for the timer that will be resizable */
+        #timer-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Settings container */
+        #settings {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 100;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            padding: 5px;
+            display: none;
+            -webkit-app-region: no-drag;
+            /* Make controls clickable */
+        }
+
+        #settings {
+            display: block;
+        }
+
+        #app-container #settings {
+            display: block;
+        }
+
+        /* Scale slider */
+        #scale-control {
+            display: none;
+            width: 100px;
+        }
+
+        /* Close button */
+        #close-btn {
+            color: white;
+            background: red;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        /* This is where we'll embed the bomb timer UI from the shared code */
+        #timer-content {
+            width: 100%;
+            height: 100%;
+            transform-origin: top left;
+        }
+
+        @font-face {
+            font-family: "LCD AT&T Phne Time/Date";
+            src: url("./assets/lcdat.woff") format("woff");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --font: "LCD AT&T Phne Time/Date", sans-serif;
+        }
+
+        /* Make all interactive elements non-draggable so they're clickable */
+        .circuit__square-button,
+        .circuit__red-button,
+        #d1,
+        #d2,
+        #d3,
+        #d4,
+        button {
+            -webkit-app-region: no-drag;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1vw;
+            background-color: transparent;
+            background-size: 16px 16px;
+        }
+
+        .bomb {
+            font-size: 1.1vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            position: relative;
+            filter: drop-shadow(1em 1em 0.3em rgba(0, 0, 0, 0.5));
+        }
+
+        .hide-bomb {
+            display: none;
+        }
+
+        .explosionCLS {
+            height: 100%;
+            background-image: url('./assets/explosion.gif');
+            background-size: contain;
+            background-repeat: no-repeat;
+            cursor: nwse-resize;
+        }
+
+        .bomb--explosion {
+            -webkit-animation: bomb 0.4s ease-out;
+            animation: bomb 0.4s ease-out;
+        }
+
+        .bomb__dynamite {
+            width: 52em;
+            height: 9em;
+            background: linear-gradient(#837f5d 0%, #e6e2aa 50%, #8d885e 100%);
+            position: relative;
+            filter: drop-shadow(0em 0.2em 0.1em rgba(0, 0, 0, 0.5)) drop-shadow(0em -0.2em 0.1em rgba(0, 0, 0, 0.5));
+        }
+
+        .bomb__dynamite:before,
+        .bomb__dynamite:after {
+            content: "";
+            position: absolute;
+            width: 2em;
+            height: 100%;
+            top: 0;
+            background: linear-gradient(#837f5d 0%, #e6e2aa 50%, #8d885e 100%);
+        }
+
+        .bomb__dynamite:before {
+            left: -1.9em;
+            border-radius: 50% 0 0 50%;
+        }
+
+        .bomb__dynamite:after {
+            right: -1.9em;
+            border-radius: 0 50% 50% 0;
+        }
+
+        .bomb__dynamite--center {
+            width: 54em;
+            z-index: 1;
+        }
+
+        .bomb__dynamite--first {
+            transform: translateY(2em);
+        }
+
+        .bomb__dynamite--last {
+            transform: translateY(-2em);
+        }
+
+        .bomb__tape {
+            width: 3em;
+            height: 23em;
+            position: absolute;
+            z-index: 2;
+            top: calc(50% - 11.5em);
+            left: 28em;
+            border-radius: 50% 0 0 50%;
+            box-shadow: -1em 0 0 0 black, -2em 0 0 0 black, -3em 0 0 0 black, -4em 0 0 0 black;
+            filter: drop-shadow(0em 0em 0.3em rgba(0, 0, 0, 0.4));
+        }
+
+        .mfg-info {
+            position: relative;
+            font-size: 5px;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            font-family: monospace;
+            left: 15px;
+        }
+
+        .bomb__tape--right {
+            left: unset;
+            right: 28em;
+            border-radius: 0 50% 50% 0;
+            box-shadow: 1em 0 0 0 black, 2em 0 0 0 black, 3em 0 0 0 black, 4em 0 0 0 black;
+        }
+
+        .bomb__circuit {
+            position: absolute;
+            top: calc(50% - 8em);
+            left: calc(50% - 12em);
+            z-index: 2;
+        }
+
+        .circuit {
+            font-size: 1em;
+            background-color: #941d1d;
+            width: 24em;
+            height: 16em;
+            box-shadow: 0.1em 0.1em 0.1em rgba(0, 0, 0, 0.4), -0.1em -0.1em 0.1em rgba(0, 0, 0, 0.4), -0.1em 0.1em 0.1em rgba(0, 0, 0, 0.4), 0.1em -0.1em 0.1em rgba(0, 0, 0, 0.4), 0.3em 0.3em 0.3em rgba(0, 0, 0, 0.5);
+        }
+
+        .circuit:after {
+            content: "";
+            position: absolute;
+            width: 1em;
+            height: 1em;
+            background: #3a0101;
+            border-radius: 50%;
+            top: 0.5em;
+            left: 0.5em;
+            box-shadow: 22em 0 #3a0101, 22em 14em #3a0101, 0 14em #3a0101;
+        }
+
+        .circuit__multiplexers {
+            display: flex;
+            padding: 2em 2.5em;
+            padding-bottom: 1em;
+            justify-content: space-between;
+        }
+
+        .circuit__lcd-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .circuit__led {
+            margin: 0 0.55em;
+            width: 0.7em;
+            height: 0.7em;
+            border-radius: 50%;
+            border: 0.15em solid #541828;
+            background: radial-gradient(#a33b3b 8%, #942a2a 21%, #541828 100%);
+            filter: drop-shadow(0.4em 0.3em 0.2em rgba(0, 0, 0, 0.4));
+            transition: all 0.2s ease-in-out;
+        }
+
+        .circuit__led--on {
+            border: 0.15em solid #8f2844;
+            background: radial-gradient(#ed1818 8%, #e00505 21%, #0e0306 100%);
+            box-shadow: 0 0 0.5em #ed1818, 0 0 0.1em #ed1818, inset 0 0 0.5em #ed1818;
+        }
+
+        .circuit__buttons-container {
+            display: flex;
+            align-items: center;
+            padding-left: 1.6em;
+            padding-top: 0.4em;
+        }
+
+        .circuit__buzzing {
+            width: 2em;
+            height: 2em;
+            border-radius: 50%;
+            background: radial-gradient(#7f7f82 15%, #000000 20%, #000000 48%, #232326 55%, #525252 60%, #a8a8ab 63%, #525252 66%, #a8a8ab 69%, #525252 72%);
+            box-shadow: 0.2em 0.3em 0.4em rgba(0, 0, 0, 0.5);
+        }
+
+        .circuit__red-button {
+            font-size: 1em;
+            width: 2.3em;
+            height: 2.3em;
+            border-radius: 50%;
+            margin: 0 0.4em;
+            box-shadow: 0.1em 0.1em 0.2em rgba(0, 0, 0, 0.4);
+            background: radial-gradient(#c41b2b 30%, #db3e3e 47%, #8f2844 50%, #232326 55%, #525252 65%, #525252 67%, #232326 70%);
+            outline: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .multiplexer {
+            font-size: 1em;
+            background-color: #232326;
+            border: 0.1em solid #000000;
+            width: 8.5em;
+            height: 2.5em;
+            position: relative;
+            box-shadow: 0.1em 0.1em 0.6em rgba(0, 0, 0, 0.7);
+        }
+
+        .multiplexer:before,
+        .multiplexer:after {
+            content: "";
+            position: absolute;
+            height: 0.6em;
+            top: calc(50% - 0.3em);
+        }
+
+        .multiplexer:before {
+            width: 0.4em;
+            background-color: black;
+            border-radius: 0 50% 50% 0;
+            left: -0.14em;
+        }
+
+        .multiplexer:after {
+            width: 0.6em;
+            border-radius: 50%;
+            left: -0.3em;
+            box-shadow: 1.5em 0 black, 7em 0 black;
+        }
+
+        .multiplexer__text {
+            margin-left: auto;
+            margin-right: 4em;
+            color: #565547;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.6em;
+            max-width: 13ch;
+            line-height: 1em;
+            text-align: right;
+        }
+
+        .multiplexer__text--bold {
+            font-weight: 600;
+        }
+
+        .pin {
+            position: absolute;
+            width: 0.3em;
+            height: 0.3em;
+            border-radius: 50%;
+            background-color: #000000;
+            z-index: -1;
+            font-size: 1em;
+        }
+
+        .pin:before {
+            content: "";
+            position: absolute;
+            width: 0.8em;
+            height: 0.3em;
+            background: linear-gradient(to top, #afafb2 66%, #403c3a 100%);
+            top: 0.2em;
+            left: -0.25em;
+            z-index: 3;
+        }
+
+        .pin:after {
+            content: "";
+            position: absolute;
+            width: 0.6em;
+            height: 0.2em;
+            top: 0.1em;
+            left: -0.15em;
+            z-index: -1;
+            background: linear-gradient(to top, #403c3a 54%, #afafb2 72%, #403c3a 100%);
+        }
+
+        .lcd {
+            width: 19.5em;
+            height: 7em;
+            background: black;
+            position: relative;
+            filter: drop-shadow(0.05em 0.05em 0em rgba(0, 0, 0, 0.4)) drop-shadow(-0.05em -0.05em 0em rgba(0, 0, 0, 0.4)) drop-shadow(0.4em 0.4em 0.3em rgba(0, 0, 0, 0.5));
+            font-size: 1em;
+        }
+
+        .lcd__background,
+        .lcd__time {
+            position: absolute;
+            font-family: var(--font);
+            font-size: 8em;
+            text-align: right;
+            right: 0.1em;
+            top: 0.02em;
+        }
+
+        .lcd__background {
+            color: rgba(255, 255, 255, 0.1);
+        }
+
+        .lcd__time {
+            color: #e00505;
+            text-shadow: 0 0 0.5em #e00505, 0 0 0.1em #e00505;
+        }
+
+        .lcd__time .text {
+            width: 100%;
+        }
+
+        .circuit__red-button,
+        .square-button {
+            pointer-events: auto;
+            z-index: 1001;
+        }
+
+        .square-button {
+            font-size: 1em;
+            z-index: 10000;
+            border: none;
+            outline: none;
+            padding: 0;
+            width: 1.5em;
+            max-width: 1.5em;
+            height: 1.5em;
+            background: linear-gradient(#616161 0%, #a8a8ab 20%, #616161 100%);
+            border-radius: 0.15em;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 1em;
+            box-shadow: 0.3em 0.3em 0.2em rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .square-button:after {
+            content: "";
+            position: absolute;
+            width: 0.9em;
+            height: 0.9em;
+            border-radius: 50%;
+            background: radial-gradient(#000000 0%, #000000 55%, #403c3a 70%);
+        }
+
+        .square-button__pin {
+            font-size: 0.6em;
+        }
+
+        .square-button__rivet {
+            position: absolute;
+            width: 0.35em;
+            height: 0.35em;
+            border-radius: 50%;
+            background: radial-gradient(#403c3a 0%, #000000 100%);
+        }
+
+        .multiplexer__pin:nth-child(2) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (1 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(3) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (2 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(4) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (3 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(5) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (4 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(6) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (5 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(7) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (6 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(8) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (7 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(9) {
+            top: -0.5em;
+            left: calc((0.8em + 0.22em) * (8 - 0.5));
+        }
+
+        .multiplexer__pin:nth-child(10) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (9 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(11) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (10 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(12) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (11 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(13) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (12 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(14) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (13 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(15) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (14 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(16) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (15 - 0.5) - 8.2em);
+        }
+
+        .multiplexer__pin:nth-child(17) {
+            top: 2.7em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.22em) * (16 - 0.5) - 8.2em);
+        }
+
+        .square-button__pin:nth-child(1) {
+            top: -0.4em;
+            left: calc((0.8em + 0.28em) * (1 - 0.5));
+        }
+
+        .square-button__pin:nth-child(2) {
+            top: -0.4em;
+            left: calc((0.8em + 0.28em) * (2 - 0.5));
+        }
+
+        .square-button__pin:nth-child(3) {
+            top: 2.6em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.28em) * (3 - 0.5) - 2.1em);
+        }
+
+        .square-button__pin:nth-child(4) {
+            top: 2.6em;
+            transform: scaleY(-1);
+            left: calc((0.8em + 0.28em) * (4 - 0.5) - 2.1em);
+        }
+
+        .square-button__rivet:nth-child(5) {
+            left: 0.1em;
+            top: 0.1em;
+        }
+
+        .square-button__rivet:nth-child(6) {
+            left: 1.1em;
+            top: 0.1em;
+        }
+
+        .square-button__rivet:nth-child(7) {
+            left: 0.1em;
+            top: 1.1em;
+        }
+
+        .square-button__rivet:nth-child(8) {
+            left: 1.1em;
+            top: 1.1em;
+        }
+
+        #wires {
+            font-size: 1em;
+            position: absolute;
+            right: 12em;
+            top: 6em;
+            width: 24em;
+            z-index: 4;
+            filter: drop-shadow(0.5em 0.5em 0.2em rgba(0, 0, 0, 0.3));
+        }
+
+        .wire {
+            stroke: blue;
+            stroke-miterlimit: 10;
+            fill: none;
+            stroke-width: 0.7em;
+        }
+
+        .wire--yellow {
+            stroke: #848110;
+        }
+
+        .wire--green {
+            stroke: #086023;
+        }
+
+        .wire--red {
+            stroke: #820b0b;
+        }
+
+        .wire--copper {
+            stroke: #93500c;
+            stroke-width: 0.2em;
+        }
+
+        .tin {
+            position: absolute;
+            border-radius: 50%;
+            width: 0.4em;
+            height: 0.4em;
+            background: radial-gradient(#afafb2 20%, #403c3a 45%, #afafb2 55%, #403c3a 80%);
+            z-index: 5;
+            top: 6em;
+            right: 16.2em;
+        }
+
+        .tin--2 {
+            top: 10.8em;
+        }
+
+        .tin--3 {
+            top: 12em;
+        }
+
+        .confetti {
+            position: absolute;
+            z-index: 6;
+            left: 40vw;
+            top: calc(50vh + 10em);
+            opacity: 0;
+            transform: scale(1) rotate(0deg);
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+        }
+
+        @-webkit-keyframes bomb {
+            0% {
+                transform: translateX(0) translateX(0) rotate(0);
+            }
+
+            14% {
+                transform: translateX(20em) translateY(0) rotate(0);
+            }
+
+            42% {
+                transform: translateX(20em) translateY(-10em) rotate(40deg);
+            }
+
+            56% {
+                transform: translateX(10em) translateY(0) rotate(-30deg);
+            }
+
+            70% {
+                transform: translateX(5em) translateY(5em) rotate(15deg);
+            }
+
+            84% {
+                transform: translateX(0) translateY(0) rotate(-10deg);
+            }
+
+            100% {
+                transform: translateX(0) translateY(0) rotate(0deg);
+            }
+        }
+
+        @keyframes bomb {
+            0% {
+                transform: translateX(0) translateX(0) rotate(0);
+            }
+
+            14% {
+                transform: translateX(20em) translateY(0) rotate(0);
+            }
+
+            42% {
+                transform: translateX(20em) translateY(-10em) rotate(40deg);
+            }
+
+            56% {
+                transform: translateX(10em) translateY(0) rotate(-30deg);
+            }
+
+            70% {
+                transform: translateX(5em) translateY(5em) rotate(15deg);
+            }
+
+            84% {
+                transform: translateX(0) translateY(0) rotate(-10deg);
+            }
+
+            100% {
+                transform: translateX(0) translateY(0) rotate(0deg);
+            }
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background-image: url('./assets/resize.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            cursor: nwse-resize;
+            z-index: 1001;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .resize-handle:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-container">
+        <div id="settings">
+            <input type="range" id="scale-control" min="0.5" max="2" step="0.1" value="1">
+            <button id="close-btn">X</button>
+        </div>
+
+        <div id="timer-wrapper">
+            <div id="timer-content">
+                <div id="explosion"></div>
+                <div class="bomb" id="bombContainer">
+                    <div class="bomb__dynamite bomb__dynamite--first"></div>
+                    <div class="bomb__dynamite bomb__dynamite--center"></div>
+                    <div class="bomb__dynamite bomb__dynamite--last"></div>
+                    <div class="bomb__tape"></div>
+                    <div class="bomb__tape bomb__tape--right"></div>
+                    <div class="bomb__circuit circuit">
+                        <div class="circuit__multiplexers">
+                            <div class="circuit__multiplexer multiplexer">
+                                <p class="multiplexer__text">MERCHE<span class="multiplexer__text--bold">DEV</span>
+                                    A5571</p>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                            </div>
+                            <div class="circuit__multiplexer multiplexer">
+                                <p class="multiplexer__text">MERCHE<span class="multiplexer__text--bold">DEV</span>
+                                    A5571</p>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                                <div class="multiplexer__pin pin"></div>
+                            </div>
+                        </div>
+
+                        <div class="circuit__lcd-container">
+                            <div class="circuit__led"></div>
+                            <div class="circuit__lcd lcd">
+                                <div class="lcd__background">88:88</div>
+                                <div class="lcd__time">00:00</div>
+                            </div>
+                        </div>
+
+                        <div class="circuit__buttons-container">
+                            <div class="circuit__buzzing buzzing"></div>
+                            <button id="d1" class="circuit__square-button square-button" onclick="
+                            sumNum(this)
+                            ">
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                            </button>
+                            <button id="d2" class="circuit__square-button square-button" onclick="sumNum(this)">
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                            </button>
+                            <button class="circuit__red-button"></button>
+                            <button id="d3" class="circuit__square-button square-button" onclick="sumNum(this)">
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                            </button>
+                            <button id="d4" class="circuit__square-button square-button" onclick="sumNum(this)">
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__pin pin"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                                <div class="square-button__rivet"></div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tin"></div>
+                    <div class="tin tin--2"></div>
+                    <div class="tin tin--3"></div>
+                    <svg id="wires" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 611.87 400">
+                        <path class="wire wire--yellow"
+                            d="M41.68,198.38l178.18-1.74s73.94,1.74,117.94-42.8C426.15,64.4,493.18,22.85,519.93,53.72c20.54,38.55-43.99,51.69-43.99,51.69" />
+                        <path class="wire wire--green"
+                            d="M41.68,228.5H204.59s112.85-5.94,169.31,50.97c38.34,38.65,137.02,33.03,159.9-12.37,6.72-13.34-3.2-39.34-35.11-35.15" />
+                        <path class="wire wire--red"
+                            d="M41.68,259.91s108.22-15.55,167.15,26.44c69.25,49.35,226.13,81.56,283.24,78.75,48.89-15.64,13.86-42.5,9.86-42.5" />
+                        <path class="wire wire--copper" d="M41.68,197.37s-9.58,.5-11.66-.73" />
+                        <path class="wire wire--copper" d="M41.68,198.69s-9.78-.32-14.06-.32" />
+                        <path class="wire wire--copper" d="M41.68,199.52s-6.45-.38-12.4,.1" />
+                        <path class="wire wire--copper" d="M41.68,227.32s-9.58,.5-11.66-.73" />
+                        <path class="wire wire--copper" d="M41.68,228.64s-9.78-.32-14.06-.32" />
+                        <path class="wire wire--copper" d="M41.68,229.48s-6.45-.38-12.4,.1" />
+                        <path class="wire wire--copper" d="M41.68,258.38s-9.58,.5-11.66-.73" />
+                        <path class="wire wire--copper" d="M41.68,259.7s-9.78-.32-14.06-.32" />
+                        <path class="wire wire--copper" d="M41.68,260.53s-6.45-.38-12.4,.1" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="resize-handle"></div>
+    </div>
+
+    <script>
+        // renderer.js - Renderer process code
+        const { ipcRenderer } = require('electron');
+
+        // Elements
+        const scaleControl = document.getElementById('scale-control');
+        const closeBtn = document.getElementById('close-btn');
+        const timerContent = document.getElementById('timer-content');
+
+        // Event listeners
+        scaleControl.addEventListener('input', (e) => {
+            const scale = parseFloat(e.target.value);
+            timerContent.style.transform = `scale(${scale})`;
+            ipcRenderer.send('resize-window', scale);
+        });
+
+        closeBtn.addEventListener('click', () => {
+            window.close();
+        });
+
+        // Initialize timer functionality
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const beep_sound = new Audio('./assets/beep.mp3');
+            const button_sound = new Audio('./assets/button.mp3');
+            const explosion_sound = new Audio('./assets/cannon.mp3');
+
+            let digits = {
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0
+            }
+
+            let count_int;
+            const lcd = document.querySelector('.lcd__time');
+            const set_button = document.querySelector('.circuit__red-button');
+            let timer_set = false;
+
+            // Make sure to attach event listeners for the button functionality
+            set_button.addEventListener('click', setTimer);
+
+            // Initialize the timer display
+            lcd.innerText = `${digits[1]}${digits[2]}:${digits[3]}${digits[4]}`;
+
+            // Add click handlers to the digit buttons
+            document.querySelectorAll('.circuit__square-button').forEach(btn => {
+                btn.addEventListener('click', () => sumNum(btn));
+            });
+
+            function sumNum(e) {
+                const digit = e.id.split('d')[1];
+                button_sound.play();
+                if (timer_set == false) {
+                    if ((digit == 1) && digits[digit] == 5 || (digit == 3) && digits[digit] == 5 || (digit == 2) && digits[digit] == 9 || (digit == 4) && digits[digit] == 9) {
+                        digits[digit] = 0;
+                    }
+                    else {
+                        digits[digit]++
+                    }
+                    updateTimer();
+                }
+            }
+
+            function setTimer() {
+                button_sound.play();
+
+                let mins = String(digits[1]) + String(digits[2]);
+                let secs = String(digits[3]) + String(digits[4]);
+                if (!timer_set && (mins > 0 || secs > 0)) {
+                    timer_set = true;
+
+                    count_int = setInterval(() => {
+                        if (secs == 0) {
+                            if (mins == 0) {
+                                explosion();
+                            } else {
+                                mins--;
+                                secs = 59;
+                                turnOnLed();
+                            }
+                        } else {
+                            secs--;
+                            turnOnLed();
+                        }
+                        if (String(secs).length > 1) {
+                            digits[3] = String(secs)[0];
+                            digits[4] = String(secs)[1];
+                        } else {
+                            digits[3] = 0;
+                            digits[4] = String(secs)[0];
+                        }
+                        if (String(mins).length > 1) {
+                            digits[1] = String(mins)[0];
+                            digits[2] = String(mins)[1];
+                        } else {
+                            digits[1] = 0;
+                            digits[2] = String(mins)[0];
+                        }
+
+                        updateTimer();
+                    }, 1000);
+                }
+            }
+
+            function turnOnLed() {
+                const led = document.querySelector('.circuit__led');
+                beep_sound.play();
+                led.classList.add('circuit__led--on');
+                setTimeout(function () {
+                    led.classList.remove('circuit__led--on');
+                }, 850)
+            }
+
+            function updateTimer() {
+                lcd.innerText = `${digits[1]}${digits[2]}:${digits[3]}${digits[4]}`;
+            }
+
+            function explosion() {
+                clearInterval(count_int);
+                timer_set = false;
+                explosion_sound.play();
+                explosionGif();
+            }
+
+            function explosionGif() {
+                clearInterval(count_int);
+                timer_set = false;
+                explosion_sound.play();
+
+                const bomb = document.querySelector('.bomb');
+                bomb.style.display = 'none';
+
+                const explosionGif = document.createElement('img');
+                explosionGif.src = './assets/explosion.gif';
+                explosionGif.style.position = 'absolute';
+                explosionGif.style.width = '100%';
+                explosionGif.style.height = '100%';
+                explosionGif.style.objectFit = 'contain';
+                explosionGif.style.zIndex = '1000';
+                document.body.appendChild(explosionGif);
+
+                setTimeout(() => {
+                    explosionGif.remove();
+                    bomb.style.display = 'flex';
+                }, 1800);
+            }
+
+            function randomFloat(min, max) {
+                return (Math.random() * (max - min)) + min;
+            }
+        });
+    </script>
+</body>
+
+</html>
